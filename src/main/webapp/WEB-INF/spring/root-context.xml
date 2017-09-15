@@ -8,6 +8,7 @@
 
 	<websocket:handlers>
 		<websocket:mapping path="/echoHandler/" handler="echoHandler"/>
+		<websocket:sockjs/>
 	</websocket:handlers>
 
 	<bean id="echoHandler" class="com.ferasinka.prospring4websockets.EchoHandler"/>
