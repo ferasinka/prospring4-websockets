@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:mvc="http://www.springframework.org/schema/mvc"
 	   xmlns:websocket="http://www.springframework.org/schema/websocket"
-	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket.xsd">
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<mvc:annotation-driven/>
 
 	<mvc:resources mapping="/index.html" location="/static/"/>
 
-	<websocket:handlers>
-		<websocket:mapping path="/echoHandler/" handler="echoHandler"/>
-		<websocket:sockjs/>
-	</websocket:handlers>
+	<context:component-scan base-package="com.ferasinka.prospring4websockets"/>
 
-	<bean id="echoHandler" class="com.ferasinka.prospring4websockets.EchoHandler"/>
+	<websocket:message-broker application-destination-prefix="/app">
+		<websocket:stomp-endpoint path="/ws">
+			<websocket:sockjs/>
+		</websocket:stomp-endpoint>
+
+		<websocket:simple-broker prefix="/topic/"/>
+	</websocket:message-broker>
+
+	<bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
 </beans>

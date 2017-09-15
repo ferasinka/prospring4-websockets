@@ -1,97 +1,72 @@
 <html>
 <head>
-	<meta charset="UTF-8">
-	<title>SockJS Tester</title>
-	<script language="javascript" type="text/javascript"
-			src="https://d1fxtkz8shb9d2.cloudfront.net/sockjs-0.3.4.min.js"></script>
-	<script language="javascript" type="text/javascript" src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
-	<script language="javascript" type="text/javascript">
-		var ping;
-		var sockjs;
+	<title>Stock Ticker</title>
+	<script src="https://d1fxtkz8shb9d2.cloudfront.net/sockjs-0.3.4.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.2/stomp.min.js"></script>
+	<script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+	<script>
+		var stomp = Stomp.over(new SockJS("/ws"));
 
-		jQuery(function ($) {
-			function writePing(message) {
-				$('#pingOutput').append(message + '\n');
+		function displayStockPrice(frame) {
+			var prices = JSON.parse(frame.body);
+
+			$('#price').empty();
+
+			for (var i in prices) {
+				var price = prices[i];
+
+				$('#price').append(
+					$('<tr>').append(
+						$('<td>').html(price.code),
+						$('<td>').html(price.price.toFixed(2)),
+						$('<td>').html(price.dateFormatted)
+					)
+				);
 			}
+		}
 
-			function writeStatus(message) {
-				$("#statusOutput").val($("#statusOutput").val() + message + '\n');
-			}
+		var connectCallback = function () {
+			stomp.subscribe('/topic/price', displayStockPrice);
+		};
 
-			function writeMessage(message) {
-				$('#messageOutput').append(message + '\n')
-			}
+		var errorCallback = function (error) {
+			alert(error.headers.message);
+		};
 
-			$('#connect')
-				.click(function doConnect() {
-					sockjs = new SockJS($("#target").val());
+		stomp.connect("guest", "guest", connectCallback, errorCallback);
 
-					sockjs.onopen = function (evt) {
-						writeStatus("CONNECTED");
+		$(document).ready(function () {
+			$('.addStockButton').click(function (e) {
+				e.preventDefault();
 
-						var ping = setInterval(function () {
-							if (sockjs !== "undefined") {
-								sockjs.send("ping");
-							}
-						}, 3000);
-					};
-
-					sockjs.onclose = function (evt) {
-						writeStatus("DISCONNECTED");
-					};
-
-					sockjs.onmessage = function (evt) {
-						if (evt.data === "ping") {
-							writePing(evt.data);
-						} else {
-							writeMessage('ECHO: ' + evt.data);
-						}
-					};
-
-					sockjs.onerror = function (evt) {
-						onError(writeStatus('ERROR:' + evt.data))
-					};
+				var jsonstr = JSON.stringify({
+					'code': $('.addStock .code').val(),
+					'price': Number($('.addStock .price').val())
 				});
 
-			$('#disconnect')
-				.click(function () {
-					if (typeof sockjs !== 'undefined') {
-						sockjs.close();
-						sockjs = undefined;
-					} else {
-						alert("Not connected.");
-					}
-				});
+				stomp.send("/app/addStock", {}, jsonstr);
 
-			$('#send')
-				.click(function () {
-					if (typeof sockjs !== 'undefined') {
-						sockjs.send($('#message').val());
-					} else {
-						alert("Not connected.");
-					}
-				});
+				return false;
+			});
 		});
 	</script>
 </head>
-
 <body>
-<h2>SockJS Tester</h2>
-Target:
-<input type="text" id="target" size="40" value="http://localhost:8080/echoHandler"/>
-<br/>
-<button id="connect">Connect</button>
-<button id="disconnect">Disconnect</button>
-<br/>
-<br/>Message:
-<input type="text" id="message" value=""/>
-<button id="send">Send</button>
-<br/>
-<p>Status output:</p>
-<pre><textarea id="statusOutput" rows="10" cols="50"></textarea></pre>
-<p>Message output:</p>
-<pre><textarea id="messageOutput" rows="10" cols="50"></textarea></pre>
-<p>Ping output:</p>
-<pre><textarea id="pingOutput" rows="10" cols="50"></textarea></pre>
+<h1><b>Stock Ticker</b></h1>
+<table border="1">
+	<thead>
+	<tr>
+		<th>Code</th>
+		<th>Price</th>
+		<th>Time</th>
+	</tr>
+	</thead>
+	<tbody id="price"></tbody>
+</table>
+<p class="addStock">
+	Code: <input type="text" class="code"/><br/>
+	Price: <input type="text" class="price"/><br/>
+	<button class="addStockButton">Add Stock</button>
+</p>
 </body>
 </html>
